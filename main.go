@@ -44,13 +44,15 @@ func main() {
 	rand.Seed(time.Now().Unix())
 	t := time.Now()
 
+	users := make(chan User)
+
 	wg := &sync.WaitGroup{}
 
-	users := generateUsers(1000)
-	for _, user := range users{
+	go generateUsers(1000, users)
+
+	for user := range users{
 		wg.Add(1)
 		go saveUserInfo(user, wg)	
-		
 	}
 
 	wg.Wait()
@@ -78,16 +80,16 @@ func saveUserInfo(user User, wg *sync.WaitGroup) error{
 
 }
 
-func generateUsers(count int) []User{
-	users := make([]User, count)
+func generateUsers(count int, users chan User){
+	
 	for i:=0; i<count; i++{
-		users[i] = User{
+		users <- User{
 			id: i+1,
 			email: fmt.Sprintf("user_email%d@gmail.com", i+1),
 			logs: generateLogs(rand.Intn(1000)),
 		}
 	}
-	return users
+	close(users)
 }
 
 func generateLogs(count int) []logItem {
